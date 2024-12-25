@@ -156,8 +156,9 @@ where
 /// # use reverse_proxy_service::ReusedService;
 /// # use reverse_proxy_service::Static;
 /// # use tower_service::Service;
-/// # use hyper::body::Body;
+/// # use http_body_util::Empty;
 /// # use http::Request;
+/// # use hyper::body::{Body, Bytes};
 /// let svc_builder = reverse_proxy_service::builder_http("example.com:1234").unwrap();
 ///
 /// let mut svc1 = svc_builder.build(Static("bar"));
@@ -165,14 +166,14 @@ where
 ///
 /// let req = Request::builder()
 ///     .uri("https://myserver.com/foo")
-///     .body(Body::empty())
+///     .body(Empty::<Bytes>::new())
 ///     .unwrap();
 /// // http://example.com:1234/bar
 /// let _res = svc1.call(req).await.unwrap();
 ///
 /// let req = Request::builder()
 ///     .uri("https://myserver.com/foo")
-///     .body(Body::empty())
+///     .body(Empty::<Bytes>::new())
 ///     .unwrap();
 /// // http://example.com:1234/baz
 /// let _res = svc2.call(req).await.unwrap();
@@ -359,9 +360,14 @@ mod test {
     use crate::ReplaceAll;
 
     use http::uri::{Parts, Uri};
+    use mockito::ServerGuard;
 
-    fn make_svc() -> ReusedService<ReplaceAll<'static>, HttpConnector, String> {
-        let uri = Uri::try_from(&mockito::server_url());
+    async fn make_svc() -> (
+        ServerGuard,
+        ReusedService<ReplaceAll<'static>, HttpConnector, String>,
+    ) {
+        let server = mockito::Server::new_async().await;
+        let uri = Uri::try_from(&server.url());
         assert!(uri.is_ok());
         let uri = uri.unwrap();
 
@@ -376,30 +382,30 @@ mod test {
             ReplaceAll("foo", "goo"),
         );
         assert!(svc.is_ok());
-        svc.unwrap()
+        (server, svc.unwrap())
     }
 
     #[tokio::test]
     async fn match_path() {
-        let mut svc = make_svc();
-        test_helper::match_path(&mut svc).await;
+        let (mut server, mut svc) = make_svc().await;
+        test_helper::match_path(&mut server, &mut svc).await;
     }
 
     #[tokio::test]
     async fn match_query() {
-        let mut svc = make_svc();
-        test_helper::match_query(&mut svc).await;
+        let (mut server, mut svc) = make_svc().await;
+        test_helper::match_query(&mut server, &mut svc).await;
     }
 
     #[tokio::test]
     async fn match_post() {
-        let mut svc = make_svc();
-        test_helper::match_post(&mut svc).await;
+        let (mut server, mut svc) = make_svc().await;
+        test_helper::match_post(&mut server, &mut svc).await;
     }
 
     #[tokio::test]
     async fn match_header() {
-        let mut svc = make_svc();
-        test_helper::match_header(&mut svc).await;
+        let (mut server, mut svc) = make_svc().await;
+        test_helper::match_header(&mut server, &mut svc).await;
     }
 }

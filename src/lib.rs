@@ -22,7 +22,8 @@
 //! use reverse_proxy_service::ReusedServiceBuilder;
 //! use reverse_proxy_service::{ReplaceAll, ReplaceN};
 //!
-//! use hyper::body::Body;
+//! use hyper::body::Bytes;
+//! use http_body_util::Full;
 //! use http::Request;
 //! use tower_service::Service as _;
 //!
@@ -31,7 +32,7 @@
 //! let req1 = Request::builder()
 //!     .method("GET")
 //!     .uri("https://myserver.com/foo/bar/foo")
-//!     .body(Body::empty())
+//!     .body(Full::new(Bytes::new()))
 //!     .unwrap();
 //!
 //! // Clones Arc<Client>
@@ -43,7 +44,7 @@
 //!     .method("POST")
 //!     .uri("https://myserver.com/foo/bar/foo")
 //!     .header("Content-Type", "application/x-www-form-urlencoded")
-//!     .body(Body::from("key=value"))
+//!     .body(Full::new(Bytes::from("key=value")))
 //!     .unwrap();
 //!
 //! let mut svc2 = svc_builder.build(ReplaceN("foo", "baz", 1));
@@ -61,7 +62,8 @@
 //!
 //! ## With axum
 //!
-//! ```no_run
+//! ```
+//! # #[cfg(feature = "axum")] {
 //! use reverse_proxy_service::ReusedServiceBuilder;
 //! use reverse_proxy_service::{TrimPrefix, AppendSuffix, Static};
 //!
@@ -74,14 +76,16 @@
 //!
 //!     let app = Router::new()
 //!         .route_service("/healthcheck", host1.build(Static("/")))
-//!         .route_service("/users/*path", host1.build(TrimPrefix("/users")))
+//!         .route_service("/users/{*path}", host1.build(TrimPrefix("/users")))
 //!         .route_service("/posts", host2.build(AppendSuffix("/")));
 //!
-//!     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
-//!         .serve(app.into_make_service())
-//!         .await
-//!         .unwrap();
+//!     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+//!        .await
+//!        .unwrap();
+//!
+//!    axum::serve(listener, app).await.unwrap();
 //! }
+//! # }
 //! ```
 //!
 //!
@@ -187,7 +191,7 @@ mod test_helper {
 
     use tower_service::Service;
 
-    use mockito::Matcher;
+    use mockito::{Matcher, ServerGuard};
 
     async fn call<S, B>(
         svc: &mut S,
@@ -225,7 +229,7 @@ mod test_helper {
         assert_eq!(res.unwrap().to_bytes(), expected.1);
     }
 
-    pub async fn match_path<S>(svc: &mut S)
+    pub async fn match_path<S>(server: &mut ServerGuard, svc: &mut S)
     where
         S: Service<
             Request<String>,
@@ -234,9 +238,11 @@ mod test_helper {
             Future = RevProxyFuture,
         >,
     {
-        let _mk = mockito::mock("GET", "/goo/bar/goo/baz/goo")
+        let _mk = server
+            .mock("GET", "/goo/bar/goo/baz/goo")
             .with_body("ok")
-            .create();
+            .create_async()
+            .await;
 
         call(
             svc,
@@ -253,7 +259,7 @@ mod test_helper {
         .await;
     }
 
-    pub async fn match_query<S>(svc: &mut S)
+    pub async fn match_query<S>(server: &mut ServerGuard, svc: &mut S)
     where
         S: Service<
             Request<String>,
@@ -262,10 +268,12 @@ mod test_helper {
             Future = RevProxyFuture,
         >,
     {
-        let _mk = mockito::mock("GET", "/goo")
+        let _mk = server
+            .mock("GET", "/goo")
             .match_query(Matcher::UrlEncoded("greeting".into(), "good day".into()))
             .with_body("ok")
-            .create();
+            .create_async()
+            .await;
 
         call(
             svc,
@@ -282,7 +290,7 @@ mod test_helper {
         .await;
     }
 
-    pub async fn match_post<S>(svc: &mut S)
+    pub async fn match_post<S>(server: &mut ServerGuard, svc: &mut S)
     where
         S: Service<
             Request<String>,
@@ -291,10 +299,12 @@ mod test_helper {
             Future = RevProxyFuture,
         >,
     {
-        let _mk = mockito::mock("POST", "/goo")
+        let _mk = server
+            .mock("POST", "/goo")
             .match_body("test")
             .with_body("ok")
-            .create();
+            .create_async()
+            .await;
 
         call(svc, ("POST", "/foo", None, "test"), (StatusCode::OK, "ok")).await;
 
@@ -313,7 +323,7 @@ mod test_helper {
         .await;
     }
 
-    pub async fn match_header<S>(svc: &mut S)
+    pub async fn match_header<S>(server: &mut ServerGuard, svc: &mut S)
     where
         S: Service<
             Request<String>,
@@ -322,11 +332,13 @@ mod test_helper {
             Future = RevProxyFuture,
         >,
     {
-        let _mk = mockito::mock("POST", "/goo")
+        let _mk = server
+            .mock("POST", "/goo")
             .match_header("content-type", "application/json")
             .match_body(r#"{"key":"value"}"#)
             .with_body("ok")
-            .create();
+            .create_async()
+            .await;
 
         call(
             svc,
