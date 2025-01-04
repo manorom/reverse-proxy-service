@@ -16,34 +16,38 @@ use regex::{Regex as LibRegex, Replacer};
 pub trait PathRewriter {
     fn rewrite<'a>(&'a mut self, path: &'a str) -> Cow<'a, str>;
 
+    /// # Errors
+    ///
+    /// When the rewritten path is invalid
     fn rewrite_uri<B>(
         &mut self,
-        req: &mut Request<B>,
+        request: &mut Request<B>,
         scheme: &Scheme,
         authority: &Authority,
     ) -> Result<(), HttpError> {
-        let uri = {
-            let uri = req.uri();
-            let path = self.rewrite(uri.path());
-            if let Some(query) = uri.query() {
+        let original_uri = request.uri();
+        let path = self.rewrite(original_uri.path());
+
+        let rewritten_path = {
+            if let Some(query) = original_uri.query() {
                 let mut p_and_q = path.into_owned();
                 p_and_q.push('?');
                 p_and_q.push_str(query);
 
-                Uri::builder()
-                    .scheme(scheme.clone())
-                    .authority(authority.clone())
-                    .path_and_query(p_and_q)
-                    .build()
+                p_and_q
             } else {
-                Uri::builder()
-                    .scheme(scheme.clone())
-                    .authority(authority.clone())
-                    .path_and_query(&*path)
-                    .build()
+                path.into()
             }
-        }?;
-        *req.uri_mut() = uri;
+        };
+
+        let rewritten_uri = Uri::builder()
+            .scheme(scheme.clone())
+            .authority(authority.clone())
+            .path_and_query(rewritten_path)
+            .build()?;
+
+        *request.uri_mut() = rewritten_uri;
+
         Ok(())
     }
 }

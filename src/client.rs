@@ -20,11 +20,13 @@ pub use hyper_rustls::HttpsConnector as RustlsConnector;
 pub use hyper_tls::HttpsConnector as NativeTlsConnector;
 
 /// Default [`Builder`].
+#[must_use]
 pub fn builder() -> Builder {
     Builder::new(hyper_util::rt::TokioExecutor::new())
 }
 
 /// Same as [`Client::new()`], except for the `B` parameter.
+#[must_use]
 pub fn http_default<B>() -> Client<HttpConnector, B>
 where
     B: HttpBody + Send,
@@ -37,6 +39,7 @@ where
 #[cfg(any(feature = "https", feature = "nativetls"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "https", feature = "nativetls"))))]
 #[inline]
+#[must_use]
 pub fn https_default<B>() -> Client<NativeTlsConnector<HttpConnector>, B>
 where
     B: HttpBody + Send,
@@ -48,6 +51,7 @@ where
 /// With the default [`hyper_tls::HttpsConnector`].
 #[cfg(feature = "nativetls")]
 #[cfg_attr(docsrs, doc(cfg(feature = "nativetls")))]
+#[must_use]
 pub fn nativetls_default<B>() -> Client<NativeTlsConnector<HttpConnector>, B>
 where
     B: HttpBody + Send,
@@ -85,6 +89,7 @@ where
 ///
 #[cfg(feature = "__rustls")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rustls")))]
+#[must_use]
 pub fn rustls_default<B>() -> Client<RustlsConnector<HttpConnector>, B>
 where
     B: HttpBody + Send,

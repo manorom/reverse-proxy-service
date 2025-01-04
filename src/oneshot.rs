@@ -43,6 +43,7 @@ type BoxErr = Box<dyn std::error::Error + Send + Sync>;
 /// let _res = svc.call(req).await.unwrap();
 /// # }
 /// ```
+#[expect(clippy::module_name_repetitions)]
 pub struct OneshotService<Pr, C = HttpConnector, B = Incoming> {
     client: Client<C, B>,
     scheme: Scheme,
@@ -63,7 +64,7 @@ impl<Pr: Clone, C: Clone, B> Clone for OneshotService<Pr, C, B> {
 }
 
 impl<Pr, C, B> OneshotService<Pr, C, B> {
-    /// Initializes a service with a general `Client`.
+    /// Initializes a service with a general [`Client`].
     ///
     /// A client can be built by functions in [`client`].
     ///
@@ -71,6 +72,10 @@ impl<Pr, C, B> OneshotService<Pr, C, B> {
     /// [`Uri`](http::uri::Uri).
     ///
     /// The `path` should implement [`PathRewriter`].
+    ///
+    /// # Errors
+    ///
+    /// When `scheme` or `authority` cannot be converted into a [`Scheme`] or [`Authority`].
     pub fn from<S, A>(
         client: Client<C, B>,
         scheme: S,
@@ -104,6 +109,10 @@ where
     /// For the meaning of "authority", refer to the documentation of [`Uri`](http::uri::Uri).
     ///
     /// The `path` should implement [`PathRewriter`].
+    ///
+    /// # Errors
+    ///
+    /// When `authority` cannot be converted into an [`Authority`].
     pub fn http_default<A>(authority: A, path: Pr) -> Result<Self, HttpError>
     where
         Authority: TryFrom<A>,
@@ -132,6 +141,10 @@ where
     /// For the meaning of "authority", refer to the documentation of [`Uri`](http::uri::Uri).
     ///
     /// The `path` should implement [`PathRewriter`].
+    ///
+    /// # Errors
+    ///
+    /// When `authority` cannot be converted into an [`Authority`].
     #[cfg_attr(docsrs, doc(cfg(any(feature = "https", feature = "nativetls"))))]
     pub fn https_default<A>(authority: A, path: Pr) -> Result<Self, HttpError>
     where
@@ -160,6 +173,9 @@ where
     ///
     /// The `path` should implement [`PathRewriter`].
     #[cfg_attr(docsrs, doc(cfg(feature = "nativetls")))]
+    /// # Errors
+    ///
+    /// When `authority` cannot be converted into an [`Authority`].
     pub fn nativetls_default<A>(authority: A, path: Pr) -> Result<Self, HttpError>
     where
         Authority: TryFrom<A>,
@@ -187,6 +203,9 @@ where
     ///
     /// The `path` should implement [`PathRewriter`].
     #[cfg_attr(docsrs, doc(cfg(feature = "rustls")))]
+    /// # Errors
+    ///
+    /// When `authority` cannot be converted into an [`Authority`].
     pub fn https_default<A>(authority: A, path: Pr) -> Result<Self, HttpError>
     where
         Authority: TryFrom<A>,

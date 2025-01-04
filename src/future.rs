@@ -15,6 +15,7 @@ use std::task::{Context, Poll};
 
 type BoxErr = Box<dyn std::error::Error + Send + Sync>;
 
+#[expect(clippy::module_name_repetitions)]
 pub struct RevProxyFuture {
     inner: Result<ResponseFuture, Option<HttpError>>,
 }
@@ -36,7 +37,7 @@ impl RevProxyFuture {
     {
         let inner = path
             .rewrite_uri(&mut req, scheme, authority)
-            .map(|_| client.request(req))
+            .map(|()| client.request(req))
             .map_err(Some);
         Self { inner }
     }
