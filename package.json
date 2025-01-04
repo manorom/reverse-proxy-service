@@ -1,0 +1,30 @@
+{
+  "name": "tower-reverse-proxy",
+  "version": "0.0.0-development",
+  "description": "It's written in Rust!",
+  "main": "src/main.rs",
+  "scripts": {
+    "format": "prettier --write ."
+  },
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=11.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kristof-mattei/tower-reverse-proxy.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kristof-mattei/tower-reverse-proxy/issues"
+  },
+  "homepage": "https://github.com/kristof-mattei/tower-reverse-proxy#readme",
+  "devDependencies": {
+    "@actions/tool-cache": "2.0.1",
+    "prettier": "3.4.2"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

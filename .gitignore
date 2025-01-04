@@ -1,2 +1,9 @@
 /target
 /Cargo.lock
+
+.cr-release-packages
+.cr-index
+
+node_modules/
+reports/
+profiling/

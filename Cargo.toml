@@ -2,7 +2,8 @@
 name = "tower-reverse-proxy"
 version = "0.3.0"
 edition = "2021"
-authors = ["Masato Nakata <masaton@naughie.com>"]
+rust-version = "1.83.0"
+authors = ["Kristof Mattei", "Masato Nakata <masaton@naughie.com>"]
 description = "Tower service for reverse proxy"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/kristof-mattei/tower-reverse-proxy"
@@ -11,6 +12,20 @@ keywords = ["http", "tower", "axum", "reverse", "proxy"]
 categories = ["asynchronous", "web-programming", "web-programming::http-server"]
 readme = "README.md"
 include = ["src/", "LICENSE-*", "README.md"]
+
+[lints.clippy]
+# don't stop from compiling / running
+all = "warn"
+pedantic = "warn"
+cargo = "warn"
+# this one causes confusion when combining variables (`foo`) and
+# dereferenced variables (`foo.bar`). The latter cannot be inlined
+# so we don't inline anything
+uninlined-format-args = { level = "allow", priority = 127 }
+
+[lints.rust]
+let_underscore_drop = { level = "deny", priority = 127 }
+non_ascii_idents = { level = "deny", priority = 127 }
 
 [features]
 default = ["http1"]
